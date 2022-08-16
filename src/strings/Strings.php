@@ -4,7 +4,6 @@ namespace strings;
 
 class Strings implements StringsInterface
 {
-    
     public function snakeCaseToCamelCase(string $input): string
     {
         $upperWords = ucwords($input, "_");
@@ -14,25 +13,18 @@ class Strings implements StringsInterface
     
     public function mirrorMultibyteString(string $input): string
     {
-        $explodedArr = explode(' ', $input);
-        $reverseArr = [];
+        $reverseString = implode(array_reverse(mb_str_split($input)));
         
-        foreach ($explodedArr as $value) {
-            $reverseArr[] = implode(array_reverse(mb_str_split($value)));
-        }
-        
-        return implode(' ',$reverseArr);
+        return implode(' ',array_reverse(explode(' ', $reverseString)));
     }
     
     public function getBrandName(string $noun): string
     {
         if (substr($noun, 0, 1) === substr($noun, -1)) {
-            $newBrandName = ucwords($noun . substr($noun, 1));
-        } else {
-            $newBrandName = 'The ' . ucwords($noun);
+            return ucwords($noun . substr($noun, 1));
         }
         
-        return $newBrandName;
+        return 'The ' . ucwords($noun);
     }
     
 }
