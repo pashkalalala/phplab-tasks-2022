@@ -9,6 +9,13 @@ $airports = require './airports.php';
  * and apply filtering by First Airport Name Letter and/or Airport State
  * (see Filtering tasks 1 and 2 below)
  */
+if (!empty($_GET['filter_by_first_letter'])) {
+    $airports = filteringByFirstLetter($airports, $_GET['filter_by_first_letter']);
+}
+
+if (!empty($_GET['filter_by_state'])) {
+    $airports = filteringByState($airports, $_GET['filter_by_state']);
+}
 
 // Sorting
 /**
@@ -16,6 +23,9 @@ $airports = require './airports.php';
  * and apply sorting
  * (see Sorting task below)
  */
+if (!empty($_GET['sort'])) {
+    $airports = sortByColumn($airports, $_GET['sort']);
+}
 
 // Pagination
 /**
@@ -23,6 +33,55 @@ $airports = require './airports.php';
  * and apply pagination logic
  * (see Pagination task below)
  */
+const PER_PAGE = 5;
+const MID_SIZE = 3;
+
+$totalPages = ceil(count($airports) / PER_PAGE);
+$currentPage = $_GET['page'] ?? 1;
+$start = ($currentPage - 1) * PER_PAGE;
+$airports = array_slice($airports, $start, PER_PAGE);
+
+$back = '';
+$forward = '';
+$start_page = '';
+$end_page = '';
+$pages_left = '';
+$pages_right = '';
+
+if ($currentPage > 1) {
+    $query = http_build_query(array_merge($_GET, ['page' => $currentPage - 1]));
+    $back = "<li class='page-item'><a class='page-link' href='?" . $query . "'>&lt;</a></li>";
+}
+
+if ($currentPage < $totalPages) {
+    $query = http_build_query(array_merge($_GET, ['page' => $currentPage + 1]));
+    $forward = '<li class="page-item"><a class="page-link" href="?' . $query . '">&gt;</a></li>';
+}
+
+if ($currentPage > MID_SIZE + 1) {
+    $query = http_build_query(array_merge($_GET, ['page' => 1]));
+    $start_page = "<li class='page-item'><a class='page-link' href='?" . $query . "'>&laquo;</a></li>";
+}
+
+if ($currentPage < ($totalPages - MID_SIZE)) {
+    $query = http_build_query(array_merge($_GET, ['page' => $totalPages]));
+    $end_page = "<li class='page-item'><a class='page-link' href='?" . $query . "'>&raquo;</a></li>";
+}
+
+for ($i = MID_SIZE; $i > 0; $i--) {
+    if ($currentPage - $i > 0) {
+        $query = http_build_query(array_merge($_GET, ['page' => $currentPage - $i]));
+        $pages_left .= "<li class='page-item'><a class='page-link' href='?" . $query . "'>" . $currentPage - $i . "</a></li>";
+    }
+}
+
+for ($i = 1; $i <= MID_SIZE; $i++) {
+    if ($currentPage + $i <= $totalPages) {
+        $query = http_build_query(array_merge($_GET, ['page' => $currentPage + $i]));
+        $pages_right .= "<li class='page-item'><a class='page-link' href='?" . $query . "'>" . $currentPage + $i . "</a></li>";
+    }
+}
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -53,10 +112,10 @@ $airports = require './airports.php';
         Filter by first letter:
 
         <?php foreach (getUniqueFirstLetters(require './airports.php') as $letter): ?>
-            <a href="#"><?= $letter ?></a>
+            <a href="?<?= http_build_query(array_merge($_GET, ['filter_by_first_letter' => $letter], ['page' => 1])) ?>"><?= $letter ?></a>
         <?php endforeach; ?>
 
-        <a href="/" class="float-right">Reset all filters</a>
+        <a href="<?= parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?>" class="float-right">Reset all filters</a>
     </div>
 
     <!--
@@ -72,10 +131,10 @@ $airports = require './airports.php';
     <table class="table">
         <thead>
         <tr>
-            <th scope="col"><a href="#">Name</a></th>
-            <th scope="col"><a href="#">Code</a></th>
-            <th scope="col"><a href="#">State</a></th>
-            <th scope="col"><a href="#">City</a></th>
+            <th scope="col"><a href="?<?= http_build_query(array_merge($_GET, ['sort' => 'name'])) ?>">Name</a></th>
+            <th scope="col"><a href="?<?= http_build_query(array_merge($_GET, ['sort' => 'code'])) ?>">Code</a></th>
+            <th scope="col"><a href="?<?= http_build_query(array_merge($_GET, ['sort' => 'state'])) ?>">State</a></th>
+            <th scope="col"><a href="?<?= http_build_query(array_merge($_GET, ['sort' => 'city'])) ?>">City</a></th>
             <th scope="col">Address</th>
             <th scope="col">Timezone</th>
         </tr>
@@ -95,7 +154,11 @@ $airports = require './airports.php';
         <tr>
             <td><?= $airport['name'] ?></td>
             <td><?= $airport['code'] ?></td>
-            <td><a href="#"><?= $airport['state'] ?></a></td>
+            <td>
+                <a href="?<?= http_build_query(array_merge($_GET, ['filter_by_state' => $airport['state']], ['page' => 1])) ?>">
+                    <?= $airport['state'] ?>
+                </a>
+            </td>
             <td><?= $airport['city'] ?></td>
             <td><?= $airport['address'] ?></td>
             <td><?= $airport['timezone'] ?></td>
@@ -115,11 +178,14 @@ $airports = require './airports.php';
     -->
     <nav aria-label="Navigation">
         <ul class="pagination justify-content-center">
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <?php echo $start_page ?>
+            <?php echo $back ?>
+            <?php echo $pages_left ?>
+            <li class="page-item active"><a class="page-link"><?php echo $currentPage ?></a></li>
+            <?php echo $pages_right ?>
+            <?php echo $forward ?>
+            <?php echo $end_page ?>
         </ul>
     </nav>
-
 </main>
 </html>
